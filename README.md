@@ -59,7 +59,9 @@ The pipeline works as follows:
 - Draw the found lanes on the image. There is no significant change to the line drawing function as the 'extrapolation' (more an interpolation in our case) is done during the merging process.
 
 
+
 ### Result images
+Test images processed for lane detection:
 
 ![alt text][image1]
 ![alt text][image2]
