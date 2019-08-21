@@ -1,56 +1,89 @@
 # **Finding Lane Lines on the Road** 
-[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
 
-<img src="examples/laneLines_thirdPass.jpg" width="480" alt="Combined Image" />
+## Writeup
 
-Overview
 ---
 
-When we drive, we use our eyes to decide where to go.  The lines on the road that show us where the lanes are act as our constant reference for where to steer the vehicle.  Naturally, one of the first things we would like to do in developing a self-driving car is to automatically detect lane lines using an algorithm.
+**Finding Lane Lines on the Road**
 
-In this project you will detect lane lines in images using Python and OpenCV.  OpenCV means "Open-Source Computer Vision", which is a package that has many useful tools for analyzing images.  
-
-To complete the project, two files will be submitted: a file containing project code and a file containing a brief write up explaining your solution. We have included template files to be used both for the [code](https://github.com/udacity/CarND-LaneLines-P1/blob/master/P1.ipynb) and the [writeup](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md).The code file is called P1.ipynb and the writeup template is writeup_template.md 
-
-To meet specifications in the project, take a look at the requirements in the [project rubric](https://review.udacity.com/#!/rubrics/322/view)
+The goals / steps of this project are the following:
+* Make a pipeline that finds lane lines on the road
+* Reflect on your work in a written report
 
 
-Creating a Great Writeup
----
-For this project, a great writeup should provide a detailed response to the "Reflection" section of the [project rubric](https://review.udacity.com/#!/rubrics/322/view). There are three parts to the reflection:
+[//]: # (Image References)
 
-1. Describe the pipeline
+[image1]: ./test_images_output/solidWhiteCurve.jpg "Grayscale"
+[image2]: ./test_images_output/solidWhiteRight.jpg "Grayscale"
+[image3]: ./test_images_output/solidYellowCurve.jpg "Grayscale"
+[image4]: ./test_images_output/solidYellowCurve2.jpg "Grayscale"
+[image5]: ./test_images_output/solidYellowCurveLeft.jpg "Grayscale"
+[image6]: ./test_images_output/whiteCarLaneSwitch.jpg "Lanes"
 
-2. Identify any shortcomings
-
-3. Suggest possible improvements
-
-We encourage using images in your writeup to demonstrate how your pipeline works.  
-
-All that said, please be concise!  We're not looking for you to write a book here: just a brief description.
-
-You're not required to use markdown for your writeup.  If you use another method please just submit a pdf of your writeup. Here is a link to a [writeup template file](https://github.com/udacity/CarND-LaneLines-P1/blob/master/writeup_template.md). 
-
-
-The Project
 ---
 
-## If you have already installed the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) you should be good to go!   If not, you should install the starter kit to get started on this project. ##
+### Reflection
 
-**Step 1:** Set up the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) if you haven't already.
+### 1. Describe your pipeline. As part of the description, explain how you modified the draw_lines() function.
 
-**Step 2:** Open the code in a Jupyter Notebook
+The pipeline works as follows:
+	
+	- The LaneFinder class is instantiated
 
-You will complete the project code in a Jupyter notebook.  If you are unfamiliar with Jupyter Notebooks, check out [Udacity's free course on Anaconda and Jupyter Notebooks](https://classroom.udacity.com/courses/ud1111) to get started.
+	- On the first frame of the video, the pipeline is initialized with the frame size and the region of interest (polygon) is computed as a ratio of the image sizes, to accomodate for the resolution difference between basic videos and challenge video.
 
-Jupyter is an Ipython notebook where you can run blocks of code and see results interactively.  All the code for this project is contained in a Jupyter notebook. To start Jupyter in your browser, use terminal to navigate to your project directory and then run the following command at the terminal prompt (be sure you've activated your Python 3 carnd-term1 environment as described in the [CarND Term1 Starter Kit](https://github.com/udacity/CarND-Term1-Starter-Kit/blob/master/README.md) installation instructions!):
+	- For each frame we first identify the raw lines using the same principle and mostly same parameters as the exercices:
 
-`> jupyter notebook`
+		- convert to grayscale
 
-A browser window will appear showing the contents of the current directory.  Click on the file called "P1.ipynb".  Another browser window will appear displaying the notebook.  Follow the instructions in the notebook to complete the project.  
+		- perform some Gaussian smoothing
 
-**Step 3:** Complete the project and submit both the Ipython notebook and the project writeup
+		- extract edges with Canny filter
 
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
+		- apply 4-sided polygon mask to keep only road parts
 
+		- extract raw lines with Hough transform
+
+	- The extracted raw lines are then processed to identify the lanes:
+
+		- Convert each line to a richer data structure Line
+
+		- Filter out lines that have irrelevant angles (too horizontal)
+
+		- Merge lines together based on angular distance and horizontal shift (by creating groups of similar lines), use a score mainly based on line length for computing a merging weight. Extend merged line to the full visible range of both original lines combined (not necessarily top to bottom of region of interest, but it generally converges to it on videos).
+
+		- Merge in the same process with previously detected lanes with artificially high score to obtain a value similar to a moving average of the selected lines.
+
+		- Keep only the two best scoring lanes. Store them for next iteration
+
+	- Draw the found lanes on the image. There is no significant change to the line drawing function as the 'extrapolation' (more an interpolation in our case) is done during the merging process.
+
+
+### Result images
+
+![alt text][image1]
+![alt text][image2]
+![alt text][image3]
+![alt text][image4]
+![alt text][image5]
+![alt text][image6]
+
+
+### 2. Identify potential shortcomings with your current pipeline
+
+
+No color filtering is used, it could potentially be useful especially on the challenge video to extract the yellow lines on dark background and obtain easier edges in the zone where they disappear, but it's generally not very reliable.
+
+It is assumed that the first frame will provide relevant lanes that will then be partially propagated over time.
+
+Because of the moving average, fast changes in lane positions would be accounted for after some delay (rather short though).
+
+Temporary loss of detection is not handled, instead the moving average will continue to propagate the last detection, and it will update when detection recovers (if not too far from last one).
+
+
+
+### 3. Suggest possible improvements to your pipeline
+
+A possible improvement would be to keep track of other hypotheses that were not selected as a lane but that may become relevant if first detection was incorrect, or if a lane is not detected anymore. Those hypotheses would be reinforced by perceived raw lines, and attenuated when no raw lines matches them.
+
+Locally adaptive edge detection could be useful for handling the loss of edge detecton in the challenge video. Some tuning of the raw line filter could probably help too.
