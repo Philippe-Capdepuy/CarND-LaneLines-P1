@@ -60,7 +60,7 @@ The pipeline works as follows:
 
 
 
-### Result images
+### 2. Result images
 Test images processed for lane detection:
 
 ![alt text][image1]
@@ -71,7 +71,7 @@ Test images processed for lane detection:
 ![alt text][image6]
 
 
-### 2. Shortcomings
+### 3. Shortcomings
 
 
 No color filtering is used, it could potentially be useful especially on the challenge video to extract the yellow lines on dark background and obtain easier edges in the zone where they disappear, but it's generally not very reliable.
@@ -84,7 +84,7 @@ Temporary loss of detection is not handled, instead the moving average will cont
 
 
 
-### 3. Possible improvements
+### 4. Possible improvements
 
 A possible improvement would be to keep track of other hypotheses that were not selected as a lane but that may become relevant if first detection was incorrect, or if a lane is not detected anymore. Those hypotheses would be reinforced by perceived raw lines, and attenuated when no raw lines matches them.
 
